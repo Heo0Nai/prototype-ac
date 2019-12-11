@@ -212,12 +212,11 @@ void loop() {
 
   mainsms();
 
-  //caution();
 }
 void mainsms()
 {
   Weather wea;
-
+caution();
   //Temp
   sprintf(TemperatureString, "The Weather's Temperature: %d ", wea.temp);
   //Temp-end
@@ -340,7 +339,7 @@ void mainsms()
           Serial.println(F("Because am on the trip, with my favor rocketship"));
           sms.SendSMS(phoneNo, ResetString);
           delay(5000);
-          //resetFunc();
+          resetFunc();
         }
         else if ( txt.indexOf(F("forecast")) >= 0 || txt.indexOf(F("guess")) >= 0 && txt.indexOf(txt2) >= 0)
         {
@@ -441,7 +440,6 @@ void predict_Rain()
 void HttpSendPara()
 {
   Weather wea;
-  beginSim();
   SerialAT.println("AT+HTTPINIT");
   delay(2000);
   toSerial();
@@ -457,7 +455,7 @@ void HttpSendPara()
   SerialAT.print("&temp=");
   delay(50);
   SerialAT.print(wea.temp);
-  delay(50);
+  delay(50);  
   SerialAT.print("&humid=");
   delay(50);
   SerialAT.print(wea.humid);
@@ -614,7 +612,7 @@ void caution()
     for (int i = 0; i < n; i++)
       sms.SendSMS(phoneNo, statu);
   }
-
+HttpSendPara();
 }
 
 void gy87_measuring()
