@@ -116,7 +116,7 @@ class Weather
     int humid = humidity;
     float temperaturee = pressure_m.bmp085GetTemperature();
     float pressure = pressure_m.bmp085GetPressure();
-    int pr = pressure/100;
+    int pr = pressure / 100;
     float altitude = pressure_m.calcAltitude(pressure);
     int alt = altitude;
 };
@@ -212,11 +212,12 @@ void loop() {
 
   mainsms();
 
+  //caution();
 }
 void mainsms()
 {
   Weather wea;
-caution();
+
   //Temp
   sprintf(TemperatureString, "The Weather's Temperature: %d ", wea.temp);
   //Temp-end
@@ -365,7 +366,7 @@ caution();
         }
         else if ( txt.indexOf(F("how")) >= 0 || txt.indexOf(F("think")) >= 0  && txt.indexOf(F("you")) >= 0  )
         {
-              sms.SendSMS(phoneNo, emotion);
+          sms.SendSMS(phoneNo, emotion);
           Serial.println(F("\nSMS sent OK"));
           delay(1000);
         }
@@ -387,9 +388,9 @@ caution();
         else if (txt.indexOf(F("gps")) >= 0 || txt.indexOf(F("location")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           //Real GPS
-         Serial.println(F("This this spartar"));
+          Serial.println(F("This this spartar"));
           readLocation();
-          
+
         }
         else
         {
@@ -440,50 +441,82 @@ void predict_Rain()
 void HttpSendPara()
 {
   Weather wea;
-  SerialAT.println("AT+HTTPINIT");
-  delay(2000);
-  toSerial();
+  bool newData = false;
+  unsigned long chars = 0;
+  unsigned short sentences, failed;
+  const char GPSString[60];
 
-  SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
-  delay(2000);
-  toSerial();
+  // For one second we parse GPS data and report some key values
+  for (unsigned long start = millis(); millis() - start < 1000;)
+  {
+    while (Serial1.available())
+    {
+      int c = Serial1.read();
+      //      Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
+      ++chars;
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
+  }
 
-  SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
-  delay(50);
-  SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
-  delay(50);
-  SerialAT.print("&temp=");
-  delay(50);
-  SerialAT.print(wea.temp);
-  delay(50);  
-  SerialAT.print("&humid=");
-  delay(50);
-  SerialAT.print(wea.humid);
-  delay(50);
-  SerialAT.print("&press=");
-  delay(50);
-  SerialAT.print(wea.pr);
-  delay(50);
-  SerialAT.print("&alt=");
-  delay(50);
-  SerialAT.print(wea.alt);
-  delay(50);
-  SerialAT.print("\"\r\n");
-  delay(2000);
-  toSerial();
+  if (newData)
+  {
+    // we have a location fix so output the lat / long and time to acquire
+    if (secondsToFirstLocation == 0) {
+      secondsToFirstLocation = (millis() - startMillis) / 1000;
+    }
+    unsigned long age;
+    gps.f_get_position(&latitude, &longitude, &age);
 
-  SerialAT.println("AT+HTTPACTION=1");
-  delay(2000);
-  toSerial();
+    latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
+    longitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longitude;
 
-  SerialAT.print("AT+HTTPREAD");
-  delay(2000);
-  toSerial();
+    SerialAT.println("AT+HTTPINIT");
+    delay(2000);
+    toSerial();
 
-  SerialAT.println("AT+HTTPTERM");
-  delay(2000);
-  toSerial();
+    SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
+    delay(2000);
+    toSerial();
 
+    SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
+    delay(50);
+    SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
+    delay(50);
+    SerialAT.print("&temp=");
+    delay(50);
+    SerialAT.print(wea.temp);
+    delay(50);
+    SerialAT.print("&humid=");
+    delay(50);
+    SerialAT.print(wea.humid);
+    delay(50);
+    SerialAT.print("&press=");
+    delay(50);
+    SerialAT.print(wea.pr);
+    delay(50);
+    SerialAT.print("&alt=");
+    delay(50);
+    SerialAT.print(wea.alt);
+    delay(50);
+    SerialAT.print("\"\r\n");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPACTION=1");
+    delay(2000);
+    toSerial();
+
+    SerialAT.print("AT+HTTPREAD");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPTERM");
+    delay(2000);
+    toSerial();
+
+
+  }
 }
 
 void delSMS() { // Delete All messages
@@ -540,9 +573,9 @@ void checktotal()
     while (Serial1.available())
     {
       int c = Serial1.read();
-      //      Serial.print((char)c); 
+      //      Serial.print((char)c);
       ++chars;
-      if (gps.encode(c)) 
+      if (gps.encode(c))
         newData = true;
     }
   }
@@ -560,21 +593,21 @@ void checktotal()
     longitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longitude;
 
     //GPS
-    int lati = latitude; 
+    int lati = latitude;
     int longi = longitude;
     double beflati = round((latitude - lati) * 1000); // 10.5435-10 = 0.5435*1,000,000
     double beflongi = round((longitude - longi) * 1000);
     int beflatir = beflati;
     int beflongir = beflongi;
-   
-    sprintf(AllString, "The Weather today is:\nTemperature: %d *C\nHumidity: %d percent\nAir Pressure: %d Pa\nAltitude: %d meters\nSim Balance: %s\nLocation:\nhttp://maps.google.com/maps?q=loc:/@%d.%d,%d.%d\n", wea.temp, wea.humid, wea.pr, wea.alt, account,lati, beflatir, longi, beflongir);
 
-  sms.SendSMS(phoneNo, AllString);
-  Serial.println(F("\nSMS sent OK"));
-    
+    sprintf(AllString, "The Weather today is:\nTemperature: %d *C\nHumidity: %d percent\nAir Pressure: %d Pa\nAltitude: %d meters\nSim Balance: %s\nLocation:\nhttp://maps.google.com/maps?q=loc:/@%d.%d,%d.%d\n", wea.temp, wea.humid, wea.pr, wea.alt, account, lati, beflatir, longi, beflongir);
+
+    sms.SendSMS(phoneNo, AllString);
+    Serial.println(F("\nSMS sent OK"));
+
   }
- 
-  
+
+
 }
 
 void weatherforecast()
@@ -612,7 +645,7 @@ void caution()
     for (int i = 0; i < n; i++)
       sms.SendSMS(phoneNo, statu);
   }
-HttpSendPara();
+
 }
 
 void gy87_measuring()
