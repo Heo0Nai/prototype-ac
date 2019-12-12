@@ -708,6 +708,46 @@ void readLocation() {
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
     longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
+    
+    SerialAT.println("AT+HTTPINIT");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
+    delay(2000);
+    toSerial();
+
+    SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
+    delay(50);
+    SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
+    delay(50);
+    SerialAT.print("&location=");
+    delay(50);
+    SerialAT.print("&lat=");
+    delay(50);
+    SerialAT.print(latitude);
+    delay(50);
+    SerialAT.print(",");
+    delay(50);
+    SerialAT.print("&lon=");
+    delay(50);
+    SerialAT.print(longtitude);
+    delay(50);
+
+    SerialAT.print("\"\r\n");
+    delay(2000);
+    toSerial();
+    SerialAT.println("AT+HTTPACTION=1");
+    delay(2000);
+    toSerial();
+
+    SerialAT.print("AT+HTTPREAD");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPTERM");
+    delay(2000);
+    toSerial();
 
 
     //GPS
