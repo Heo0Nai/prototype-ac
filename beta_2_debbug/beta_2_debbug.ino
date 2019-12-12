@@ -28,7 +28,7 @@ long secondsToFirstLocation = 0;
 #define DEBUG
 
 float latitude = 0.0;
-float longitude = 0.0;
+float longtitude = 0.0;
 
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(SIM800_RX_PIN, SIM800_TX_PIN); // RX, TX
@@ -466,11 +466,13 @@ void HttpSendPara()
       secondsToFirstLocation = (millis() - startMillis) / 1000;
     }
     unsigned long age;
-    gps.f_get_position(&latitude, &longitude, &age);
+    gps.f_get_position(&latitude, &longtitude, &age);
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
-    longitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longitude;
+    longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
 
+    Serial.println(longtitude);
+    
     SerialAT.println("AT+HTTPINIT");
     delay(2000);
     toSerial();
@@ -499,10 +501,22 @@ void HttpSendPara()
     delay(50);
     SerialAT.print(wea.alt);
     delay(50);
+    SerialAT.print("&location=");
+    delay(50);
+    SerialAT.print("&lat=");
+    delay(50);
+    SerialAT.print(latitude);
+    delay(50);
+    SerialAT.print(",");
+    delay(50);
+    SerialAT.print("&lon=");
+    delay(50);
+    SerialAT.print(longtitude);
+    delay(50);
+
     SerialAT.print("\"\r\n");
     delay(2000);
     toSerial();
-
     SerialAT.println("AT+HTTPACTION=1");
     delay(2000);
     toSerial();
@@ -515,9 +529,10 @@ void HttpSendPara()
     delay(2000);
     toSerial();
 
-
   }
 }
+
+
 
 void delSMS() { // Delete All messages
   SerialAT.print("AT+CMGDA=\"");
@@ -587,16 +602,16 @@ void checktotal()
       secondsToFirstLocation = (millis() - startMillis) / 1000;
     }
     unsigned long age;
-    gps.f_get_position(&latitude, &longitude, &age);
+    gps.f_get_position(&latitude, &longtitude, &age);
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
-    longitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longitude;
+    longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
 
     //GPS
     int lati = latitude;
-    int longi = longitude;
+    int longi = longtitude;
     double beflati = round((latitude - lati) * 1000); // 10.5435-10 = 0.5435*1,000,000
-    double beflongi = round((longitude - longi) * 1000);
+    double beflongi = round((longtitude - longi) * 1000);
     int beflatir = beflati;
     int beflongir = beflongi;
 
@@ -689,16 +704,17 @@ void readLocation() {
       secondsToFirstLocation = (millis() - startMillis) / 1000;
     }
     unsigned long age;
-    gps.f_get_position(&latitude, &longitude, &age);
+    gps.f_get_position(&latitude, &longtitude, &age);
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
-    longitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longitude;
+    longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
+
 
     //GPS
     int lati = latitude; //10.5435 -> 10
-    int longi = longitude;
+    int longi = longtitude;
     double beflati = round((latitude - lati) * 1000); // 10.5435-10 = 0.5435*1,000,000
-    double beflongi = round((longitude - longi) * 1000);
+    double beflongi = round((longtitude - longi) * 1000);
     int beflatir = beflati;
     int beflongir = beflongi;
 
