@@ -24,6 +24,7 @@ TinyGPS gps;
 
 long startMillis;
 long secondsToFirstLocation = 0;
+long beginsend = 0;
 
 #define DEBUG
 
@@ -208,12 +209,109 @@ void beginSim()
   toSerial();
 }
 
-void loop() {
-
-  mainsms();
-
+void loop() 
+{
+  //mainsms();
+  send30minutes();
   //caution();
 }
+
+void send30minutes()
+{
+  Weather wea;
+  bool newData = false;
+  unsigned long chars = 0;
+  unsigned short sentences, failed;
+  const char GPSString[60];
+  beginsend = millis();
+  // For one second we parse GPS data and report some key values
+  for (unsigned long start = millis(); millis() - start < 1000;)
+  {
+    while (Serial1.available())
+    {
+      int c = Serial1.read();
+      // Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
+      ++chars;
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
+  }
+
+  if (newData)
+  {
+    // we have a location fix so output the lat / long and time to acquire
+    if (secondsToFirstLocation == 0) {
+      secondsToFirstLocation = (millis() - startMillis) / 1000;
+    }
+    unsigned long age;
+    gps.f_get_position(&latitude, &longtitude, &age);
+
+    latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
+    longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
+
+    //if (beginsend = 1800000UL)
+    if (beginsend = 200000)
+    {
+
+      SerialAT.println("AT+HTTPINIT");
+      delay(2000);
+      toSerial();
+
+      SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
+      delay(2000);
+      toSerial();
+
+      SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
+      delay(50);
+      SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
+      delay(50);
+      SerialAT.print("&temp=");
+      delay(50);
+      SerialAT.print(wea.temp);
+      delay(50);
+      SerialAT.print("&humid=");
+      delay(50);
+      SerialAT.print(wea.humid);
+      delay(50);
+      SerialAT.print("&press=");
+      delay(50);
+      SerialAT.print(wea.pr);
+      delay(50);
+      SerialAT.print("&alt=");
+      delay(50);
+      SerialAT.print(wea.alt);
+      delay(50);
+      SerialAT.print("&location=");
+      delay(50);
+      SerialAT.print("&lat=");
+      delay(50);
+      SerialAT.print(latitude);
+      delay(50);
+      SerialAT.print(",");
+      delay(50);
+      SerialAT.print("&lon=");
+      delay(50);
+      SerialAT.print(longtitude);
+      delay(50);
+
+      SerialAT.print("\"\r\n");
+      delay(2000);
+      toSerial();
+      SerialAT.println("AT+HTTPACTION=1");
+      delay(2000);
+      toSerial();
+
+      SerialAT.print("AT+HTTPREAD");
+      delay(2000);
+      toSerial();
+
+      SerialAT.println("AT+HTTPTERM");
+      delay(2000);
+      toSerial();
+    }
+  }
+}
+
 void mainsms()
 {
   Weather wea;
@@ -437,6 +535,8 @@ void predict_Rain()
       break;
   }
 }
+
+
 
 void HttpSendPara()
 {
@@ -708,7 +808,7 @@ void readLocation() {
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
     longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
-    
+
     SerialAT.println("AT+HTTPINIT");
     delay(2000);
     toSerial();
