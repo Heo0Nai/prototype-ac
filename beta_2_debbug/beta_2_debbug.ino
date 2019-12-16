@@ -24,6 +24,7 @@ TinyGPS gps;
 
 long startMillis;
 long secondsToFirstLocation = 0;
+long beginsend = 0;
 
 #define DEBUG
 
@@ -102,8 +103,8 @@ String statuss ;
 String rainstatus ;
 int AccelerationX, AccelerationY, AccelerationZ;
 int RotationX, RotationY, RotationZ;
-const int sensorMin = 0;     // sensor minimum
-const int sensorMax = 1024;  // sensor maximum
+const int sensorMin = 0; // sensor minimum
+const int sensorMax = 1024; // sensor maximum
 long randNumber;
 const char ResetString[40];
 
@@ -208,12 +209,109 @@ void beginSim()
   toSerial();
 }
 
-void loop() {
-
-  mainsms();
-
+void loop() 
+{
+  //mainsms();
+  send30minutes();
   //caution();
 }
+
+void send30minutes()
+{
+  Weather wea;
+  bool newData = false;
+  unsigned long chars = 0;
+  unsigned short sentences, failed;
+  const char GPSString[60];
+  beginsend = millis();
+  // For one second we parse GPS data and report some key values
+  for (unsigned long start = millis(); millis() - start < 1000;)
+  {
+    while (Serial1.available())
+    {
+      int c = Serial1.read();
+      // Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
+      ++chars;
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
+  }
+
+  if (newData)
+  {
+    // we have a location fix so output the lat / long and time to acquire
+    if (secondsToFirstLocation == 0) {
+      secondsToFirstLocation = (millis() - startMillis) / 1000;
+    }
+    unsigned long age;
+    gps.f_get_position(&latitude, &longtitude, &age);
+
+    latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
+    longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
+
+    //if (beginsend = 1800000UL)
+    if (beginsend = 200000)
+    {
+
+      SerialAT.println("AT+HTTPINIT");
+      delay(2000);
+      toSerial();
+
+      SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
+      delay(2000);
+      toSerial();
+
+      SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
+      delay(50);
+      SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
+      delay(50);
+      SerialAT.print("&temp=");
+      delay(50);
+      SerialAT.print(wea.temp);
+      delay(50);
+      SerialAT.print("&humid=");
+      delay(50);
+      SerialAT.print(wea.humid);
+      delay(50);
+      SerialAT.print("&press=");
+      delay(50);
+      SerialAT.print(wea.pr);
+      delay(50);
+      SerialAT.print("&alt=");
+      delay(50);
+      SerialAT.print(wea.alt);
+      delay(50);
+      SerialAT.print("&location=");
+      delay(50);
+      SerialAT.print("&lat=");
+      delay(50);
+      SerialAT.print(latitude);
+      delay(50);
+      SerialAT.print(",");
+      delay(50);
+      SerialAT.print("&lon=");
+      delay(50);
+      SerialAT.print(longtitude);
+      delay(50);
+
+      SerialAT.print("\"\r\n");
+      delay(2000);
+      toSerial();
+      SerialAT.println("AT+HTTPACTION=1");
+      delay(2000);
+      toSerial();
+
+      SerialAT.print("AT+HTTPREAD");
+      delay(2000);
+      toSerial();
+
+      SerialAT.println("AT+HTTPTERM");
+      delay(2000);
+      toSerial();
+    }
+  }
+}
+
 void mainsms()
 {
   Weather wea;
@@ -238,7 +336,7 @@ void mainsms()
   //Humid-end
 
   //Rain
-  sprintf(RainString, "%s",  rainstatus);
+  sprintf(RainString, "%s", rainstatus);
   //Rain-end
   //Air Pressure
   sprintf(PressureString, "The Weather's Pressure : %d Pa", wea.pr);
@@ -271,7 +369,7 @@ void mainsms()
         txt.toLowerCase();
         delay(3000);
         Serial.println(F("\ string Received"));
-        if ( txt.indexOf(F("ability")) >= 0  || txt.indexOf(F("guide")) >= 0 )
+        if ( txt.indexOf(F("ability")) >= 0 || txt.indexOf(F("guide")) >= 0 )
         {
           sms.SendSMS(phoneNo, Instructionstring);
           delay(1000);
@@ -292,7 +390,7 @@ void mainsms()
           delay(1000);
           HttpSendPara();
         }
-        else if (txt.indexOf(F("humid")) >= 0  && txt.indexOf(txt2) >= 0)
+        else if (txt.indexOf(F("humid")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           sms.SendSMS(phoneNo, HumidityString);
           Serial.println(F("\nSMS sent OK"));
@@ -315,7 +413,7 @@ void mainsms()
           delay(1000);
           HttpSendPara();
         }
-        else if ( txt.indexOf(F("rain")) >= 0  && txt.indexOf(txt2) >= 0)
+        else if ( txt.indexOf(F("rain")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           predict_Rain();
           Serial.println(F("\nSMS sent OK"));
@@ -327,15 +425,15 @@ void mainsms()
           Serial.println(F("\nReceived"));
           delay(1000);
         }
-        else if ( txt.indexOf(F("check")) >= 0  || txt.indexOf(F("money")) >= 0 ||  txt.indexOf(F("balance")) >= 0 && txt.indexOf(txt2) >= 0)
+        else if ( txt.indexOf(F("check")) >= 0 || txt.indexOf(F("money")) >= 0 || txt.indexOf(F("balance")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           checkaccount();
         }
-        else if ( txt.indexOf(F("all")) >= 0 || txt.indexOf(F("total")) >= 0 || txt.indexOf(F("everything")) >= 0  && txt.indexOf(txt2) >= 0)
+        else if ( txt.indexOf(F("all")) >= 0 || txt.indexOf(F("total")) >= 0 || txt.indexOf(F("everything")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           checktotal();
         }
-        else if ( txt.indexOf(F("reset")) >= 0  || txt.indexOf(F("restart")) >= 0 && txt.indexOf(txt3) >= 0)
+        else if ( txt.indexOf(F("reset")) >= 0 || txt.indexOf(F("restart")) >= 0 && txt.indexOf(txt3) >= 0)
         {
           Serial.println(F("Because am on the trip, with my favor rocketship"));
           sms.SendSMS(phoneNo, ResetString);
@@ -346,25 +444,25 @@ void mainsms()
         {
           weatherforecast();
         }
-        else if (  txt.indexOf(F("compass")) >= 0 && txt.indexOf(txt2) >= 0)
+        else if ( txt.indexOf(F("compass")) >= 0 && txt.indexOf(txt2) >= 0)
         {
           gy87_measuring();
         }
-        else if (txt.indexOf(F("hi")) >= 0  || txt.indexOf(F("hello")) >= 0  )
+        else if (txt.indexOf(F("hi")) >= 0 || txt.indexOf(F("hello")) >= 0 )
         {
           sms.SendSMS(phoneNo, hi);
           Serial.println(F("\nSMS sent OK"));
           delay(1000);
 
         }
-        else if ( txt.indexOf(F("what")) >= 0 || txt.indexOf(F("who")) >= 0 && txt.indexOf(F("you")) >= 0  )
+        else if ( txt.indexOf(F("what")) >= 0 || txt.indexOf(F("who")) >= 0 && txt.indexOf(F("you")) >= 0 )
         {
           sms.SendSMS(phoneNo, selfintroduce);
           Serial.println(F("\nSMS sent OK"));
           delay(1000);
 
         }
-        else if ( txt.indexOf(F("how")) >= 0 || txt.indexOf(F("think")) >= 0  && txt.indexOf(F("you")) >= 0  )
+        else if ( txt.indexOf(F("how")) >= 0 || txt.indexOf(F("think")) >= 0 && txt.indexOf(F("you")) >= 0 )
         {
           sms.SendSMS(phoneNo, emotion);
           Serial.println(F("\nSMS sent OK"));
@@ -377,7 +475,7 @@ void mainsms()
           delay(1000);
         }
         /*
-          else if (txt.indexOf(F("sleep")) >= 0  || txt.indexOf(F("deep")) >= 0 )
+          else if (txt.indexOf(F("sleep")) >= 0 || txt.indexOf(F("deep")) >= 0 )
           {
           Serial.print("I'm sleeping now! ");
           Watchdog.sleep(20000);
@@ -420,23 +518,25 @@ void predict_Rain()
   int range = map(sensorReading, sensorMin, sensorMax, 0, 3);
   switch (range)
   {
-    case 0:    // Sensor getting wet
+    case 0: // Sensor getting wet
       sprintf(RainString, "Status: Flood");
       sms.SendSMS(phoneNo, RainString);
       Serial.println(RainString);
       break;
-    case 1:    // Sensor getting wet
+    case 1: // Sensor getting wet
       sprintf(RainString, "Status: Rain");
       sms.SendSMS(phoneNo, RainString);
       Serial.println(RainString);
       break;
-    case 2:    // Sensor dry
+    case 2: // Sensor dry
       sprintf(RainString, "Status: Not Raining");
       sms.SendSMS(phoneNo, RainString);
       Serial.println(RainString);
       break;
   }
 }
+
+
 
 void HttpSendPara()
 {
@@ -452,7 +552,7 @@ void HttpSendPara()
     while (Serial1.available())
     {
       int c = Serial1.read();
-      //      Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
+      // Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
       ++chars;
       if (gps.encode(c)) // Did a new valid sentence come in?
         newData = true;
@@ -472,7 +572,7 @@ void HttpSendPara()
     longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
 
     Serial.println(longtitude);
-    
+
     SerialAT.println("AT+HTTPINIT");
     delay(2000);
     toSerial();
@@ -588,7 +688,7 @@ void checktotal()
     while (Serial1.available())
     {
       int c = Serial1.read();
-      //      Serial.print((char)c);
+      // Serial.print((char)c);
       ++chars;
       if (gps.encode(c))
         newData = true;
@@ -690,7 +790,7 @@ void readLocation() {
     while (Serial1.available())
     {
       int c = Serial1.read();
-      //      Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
+      // Serial.print((char)c); // if you uncomment this you will see the raw data from the GPS
       ++chars;
       if (gps.encode(c)) // Did a new valid sentence come in?
         newData = true;
@@ -708,6 +808,46 @@ void readLocation() {
 
     latitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : latitude;
     longtitude == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : longtitude;
+
+    SerialAT.println("AT+HTTPINIT");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPPARA=\"CID\",1\r");
+    delay(2000);
+    toSerial();
+
+    SerialAT.print("AT+HTTPPARA=\"URL\",\"http://dev-demo-123.azurewebsites.net/api/HttpTrigger1?");
+    delay(50);
+    SerialAT.print("code=qdp9Kl6tEndxXa0CrgEoTYv2sUKzJJi1B6GvpfDOZdTbkIceL/CKXQ==");
+    delay(50);
+    SerialAT.print("&location=");
+    delay(50);
+    SerialAT.print("&lat=");
+    delay(50);
+    SerialAT.print(latitude);
+    delay(50);
+    SerialAT.print(",");
+    delay(50);
+    SerialAT.print("&lon=");
+    delay(50);
+    SerialAT.print(longtitude);
+    delay(50);
+
+    SerialAT.print("\"\r\n");
+    delay(2000);
+    toSerial();
+    SerialAT.println("AT+HTTPACTION=1");
+    delay(2000);
+    toSerial();
+
+    SerialAT.print("AT+HTTPREAD");
+    delay(2000);
+    toSerial();
+
+    SerialAT.println("AT+HTTPTERM");
+    delay(2000);
+    toSerial();
 
 
     //GPS
